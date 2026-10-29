@@ -1,0 +1,19 @@
+{
+  "coefficients": {
+    "total_bilirubin": 0.25677726427643544,
+    "direct_bilirubin": 0.30110802333299963,
+    "alk_phos": 0.16076272376238446,
+    "alt": 0.3264861567456529,
+    "ast": 0.282554990923099,
+    "age": 0.2538920052416903,
+    "total_protein": 0.19222903159939123,
+    "albumin": -0.12928420609073674,
+    "ag_ratio": -0.10678667286745602,
+    "gender_Male": 0.14642252987047738
+  },
+  "total_bilirubin_positive": true,
+  "alt_positive": true,
+  "ast_positive": true,
+  "alk_phos_positive": true,
+  "albumin_negative": true
+}

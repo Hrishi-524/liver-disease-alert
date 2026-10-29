@@ -1,0 +1,4 @@
+model,mean_cv_roc_auc,std_cv_roc_auc,best_params
+Logistic Regression,0.7333873913361093,0.04680360987318923,{'clf__C': 0.05}
+Random Forest,0.7252260939440429,0.04493958569310441,"{'clf__max_depth': 5, 'clf__min_samples_leaf': 5}"
+Gradient Boosting,0.7163956461392359,0.047922856385078504,"{'clf__learning_rate': 0.03, 'clf__max_depth': 3, 'clf__max_iter': 100}"
