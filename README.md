@@ -6,22 +6,28 @@
 [![FastAPI](https://img.shields.io/badge/API-FastAPI%20%2B%20Uvicorn-009688.svg)](https://fastapi.tiangolo.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-An end-to-end Machine Learning Clinical Decision-Support platform that evaluates patient similarity to liver-disease presentations from routine Liver Function Test (LFT) panels. Features a **modern React + Tailwind CSS dashboard**, a **FastAPI inference & explainability engine**, automated SHAP feature attribution, out-of-distribution alerts, batch cohort screening, and an alternative Streamlit application.
+An end-to-end user-centered Clinical Decision-Support platform that evaluates patient similarity to liver-disease presentations from routine Liver Function Test (LFT) panels. Features a **redesigned healthcare-oriented React dashboard**, a **FastAPI inference & explainability engine**, automated SHAP feature attribution, **Groq-powered plain-language clinical summaries**, lab report PDF/text extraction, out-of-distribution alerts, session-only history, and batch cohort screening.
 
-> ⚠️ **Clinical Disclaimer**: Educational and research decision-support tool only. Not a certified medical diagnostic device. Output scores reflect statistical pattern similarity to historical patient cohorts (ILPD), not an individual's absolute clinical risk.
+> ⚠️ **Clinical Disclaimer**: Educational screening prototype only. Not a medical diagnostic tool or certified clinical device. Output scores reflect statistical pattern similarity to historical research cohorts (ILPD), not an individual's definitive clinical diagnosis. Always consult a qualified healthcare provider.
 
 ---
 
 ## 🌟 Key Highlights & Architecture
 
-- **Modern React Frontend**: Clean, responsive clinical dashboard with interactive blood test inputs, reference range badges, animated probability gauge, SHAP waterfall charts, preset clinical vignettes (Normal, Borderline, Severe), and batch CSV screening.
-- **Leakage-Free ML Pipeline**: Median imputation, logarithmic transformation (`log1p`) for right-skewed enzymes, and standard scaling—fitted **exclusively** on training folds.
-- **Rigorous Cross-Validation**: 5-Fold Repeated Stratified CV (3 repeats = 15 folds) comparing Logistic Regression, Random Forest, and HistGradientBoosting against a majority-class Dummy baseline.
-- **Two Calibrated Decision Cutoffs**:
+- **User-Centered Multi-Tab Dashboard**: Clean, accessible clinical design separated from ML jargon:
+  - **Overview**: Plain-language introduction, what the system does and does not do, quick assessment entry.
+  - **New Assessment**: Two input options—manual entry with reference range guides, or lab report upload (PDF/Text) with extracted-value review.
+  - **Assessment Result**: Low / Medium / High similarity bands, neutral language ("increased/decreased model output"), physiological cross-checks, and Groq-powered plain-language explanations.
+  - **Session History**: In-memory local history for comparing runs within the current session (no remote database required).
+  - **Model & Evidence**: Dedicated tab housing technical transparency: dataset provenance, 15-fold CV results, holdout metrics, SHAP mechanics, and clinical caveats.
+  - **Batch Screening**: Preserved CSV cohort processing with summary statistics and downloadable results.
+- **Groq LLM Integration (`POST /api/explain`)**: Safe, structured plain-language explanations using fast inference (`qwen/qwen3.8-27b`) formatted strictly in JSON without clinical hallucination.
+- **Lab Report Extraction (`POST /api/extract-report`)**: Honest PDF and text extraction with a review-and-confirm form before scoring.
+- **Mathematically Sound Local SHAP**: Uses `shap.LinearExplainer` against the true training background distribution rather than raw uncentered coefficient products.
+- **Strict Data Validation & Physiological Checks**: Validates gender inputs strictly, flags direct bilirubin exceeding total bilirubin, and detects out-of-distribution biomarker values.
+- **Two Evidence-Based Decision Cutoffs**:
   - `t_low = 0.3094`: Sensitive screening cutoff (86.4% recall on test holdout).
   - `t_high = 0.4683`: High-specificity cutoff (89.1% precision, 78.8% specificity).
-- **Explainability (SHAP & Permutation)**: Global feature importance plus patient-level SHAP local attributions showing exactly which lab markers pushed risk up or down.
-- **Out-of-Distribution Warning Engine**: Flags any biomarker falling outside the empirical 1st–99th percentiles of the training cohort.
 
 ---
 
@@ -93,6 +99,10 @@ cd liver-risk-predictor
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+
+# Configure environment variables (Groq API key & CORS)
+cp .env.example .env
+# Edit .env and supply your GROQ_API_KEY
 ```
 
 ### 2. Reproduce Pipeline from Scratch
@@ -117,20 +127,15 @@ Open **[http://localhost:8000](http://localhost:8000)** in your browser!
 *(Optional: For live React frontend development with hot-reloading)*:
 ```bash
 cd frontend
+npm install
 npm run dev
 # React dev server starts on http://localhost:3000 (proxies /api to FastAPI on 8000)
 ```
 
-### 4. Launch Streamlit Application (Alternative)
-```bash
-streamlit run app.py
-```
-Open **[http://localhost:8501](http://localhost:8501)** in your browser.
-
 ---
 
 ## 🧪 Running the Test Suite
-Run the 20 comprehensive automated unit, pipeline, app, and API tests:
+Run the 26 automated unit, pipeline, app, and API tests:
 ```bash
 pytest -v
 ```

@@ -1,0 +1,33 @@
+================================================================================
+                    METROPOLITAN DIAGNOSTIC LABORATORIES
+                   Comprehensive Liver Function Test (LFT)
+================================================================================
+
+PATIENT DEMOGRAPHICS
+--------------------------------------------------------------------------------
+Patient Name   : Rajesh Kumar                   Date of Collection : 27-Oct-2026
+Age / Gender   : 54 Y / Male                    Sample Type        : Serum
+Patient ID     : MDL-2026-78104                 Referring Physician: Dr. K. Mehta
+Status         : Final Report                   Department         : Biochemistry
+
+--------------------------------------------------------------------------------
+TEST NAME                           RESULT      UNITS          REFERENCE RANGE
+--------------------------------------------------------------------------------
+Total Bilirubin                     4.8         mg/dL  (HIGH)  0.2 - 1.2
+Direct Bilirubin (Conjugated)       2.1         mg/dL  (HIGH)  0.0 - 0.3
+Alkaline Phosphatase (ALP)          340         U/L    (HIGH)  44 - 147
+SGPT / Alanine Aminotransferase (ALT) 142       U/L    (HIGH)  7 - 56
+SGOT / Aspartate Aminotransferase (AST) 168     U/L    (HIGH)  10 - 40
+Total Protein                       5.9         g/dL   (LOW)   6.0 - 8.3
+Serum Albumin                       2.8         g/dL   (LOW)   3.5 - 5.0
+A/G Ratio (Albumin/Globulin)        0.9         ratio  (LOW)   1.1 - 2.5
+
+--------------------------------------------------------------------------------
+CLINICAL COMMENTS:
+Marked mixed cholestatic and hepatocellular injury pattern observed with
+elevated aminotransferases, elevated conjugated bilirubin, and hypoalbuminemia.
+Clinical evaluation and abdominal imaging recommended.
+
+================================================================================
+                           *** END OF REPORT ***
+================================================================================

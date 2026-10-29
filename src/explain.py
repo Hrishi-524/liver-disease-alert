@@ -24,9 +24,50 @@ from src.config import (
 )
 from src.features import get_feature_names
 
-warnings.filterwarnings("ignore", category=RuntimeWarning)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
+
+# Feature metadata for mapping transformed features back to raw inputs
+FEATURE_METADATA = {
+    "total_bilirubin": {"label": "Total Bilirubin", "unit": "mg/dL", "raw_key": "total_bilirubin"},
+    "direct_bilirubin": {"label": "Direct Bilirubin", "unit": "mg/dL", "raw_key": "direct_bilirubin"},
+    "alk_phos": {"label": "Alkaline Phosphatase (ALP)", "unit": "IU/L", "raw_key": "alk_phos"},
+    "alt": {"label": "Alanine Aminotransferase (ALT)", "unit": "IU/L", "raw_key": "alt"},
+    "ast": {"label": "Aspartate Aminotransferase (AST)", "unit": "IU/L", "raw_key": "ast"},
+    "age": {"label": "Age", "unit": "years", "raw_key": "age"},
+    "total_protein": {"label": "Total Protein", "unit": "g/dL", "raw_key": "total_protein"},
+    "albumin": {"label": "Albumin", "unit": "g/dL", "raw_key": "albumin"},
+    "ag_ratio": {"label": "A/G Ratio", "unit": "ratio", "raw_key": "ag_ratio"},
+    "gender_Male": {"label": "Gender", "unit": "", "raw_key": "gender"},
+}
+
+_explainer_cache: Any = None
+
+
+def get_cached_explainer(pipeline: Any) -> Any:
+    """Initialize and cache SHAP LinearExplainer using preprocessed training data background."""
+    global _explainer_cache
+    if _explainer_cache is not None:
+        return _explainer_cache
+
+    prep = pipeline.named_steps["prep"]
+    clf = pipeline.named_steps["clf"]
+
+    train_path = DATA_PROCESSED_DIR / "train.csv"
+    if train_path.exists():
+        train_df = pd.read_csv(train_path)
+        X_train_prep = prep.transform(train_df[FEATURE_COLUMNS])
+    else:
+        # Fallback reference
+        n_features = len(prep.get_feature_names_out())
+        X_train_prep = np.zeros((20, n_features))
+
+    if hasattr(clf, "coef_"):
+        _explainer_cache = shap.LinearExplainer(clf, X_train_prep)
+    else:
+        _explainer_cache = shap.TreeExplainer(clf)
+
+    return _explainer_cache
 
 
 def compute_permutation_importance(
@@ -71,20 +112,10 @@ def run_shap_analysis(
 ) -> tuple[np.ndarray, list[str], Any]:
     """Run SHAP analysis using preprocessed features."""
     preprocessor = pipeline.named_steps["prep"]
-    classifier = pipeline.named_steps["clf"]
-
-    X_train_prep = preprocessor.transform(X_train)
     X_test_prep = preprocessor.transform(X_test)
     feature_names = get_feature_names(preprocessor)
-
-    # Use LinearExplainer for LogisticRegression or TreeExplainer for trees
-    if hasattr(classifier, "coef_"):
-        explainer = shap.LinearExplainer(classifier, X_train_prep)
-        shap_values = explainer.shap_values(X_test_prep)
-    else:
-        explainer = shap.TreeExplainer(classifier)
-        shap_values = explainer.shap_values(X_test_prep)
-
+    explainer = get_cached_explainer(pipeline)
+    shap_values = explainer.shap_values(X_test_prep)
     return shap_values, feature_names, X_test_prep
 
 
@@ -113,50 +144,72 @@ def sanity_check_feature_directions(pipeline: Any) -> dict[str, Any]:
         coef_dict = dict(zip(feature_names, coefs))
 
         findings["coefficients"] = {k: float(v) for k, v in coef_dict.items()}
-
-        # Verify key clinical relationships:
-        # 1. Total Bilirubin should be positive (elevated -> higher risk)
         findings["total_bilirubin_positive"] = bool(coef_dict.get("total_bilirubin", 0) > 0)
-        # 2. ALT / AST should be positive (elevated -> higher risk)
         findings["alt_positive"] = bool(coef_dict.get("alt", 0) > 0)
         findings["ast_positive"] = bool(coef_dict.get("ast", 0) > 0)
-        # 3. Alk Phos should be positive (elevated -> higher risk)
         findings["alk_phos_positive"] = bool(coef_dict.get("alk_phos", 0) > 0)
-        # 4. Albumin should be negative (depleted -> higher risk)
         findings["albumin_negative"] = bool(coef_dict.get("albumin", 0) < 0)
 
         logger.info("Feature Direction Sanity Check: %s", findings)
     return findings
 
 
-def explain_single_patient(pipeline: Any, patient_df: pd.DataFrame, top_k: int = 5) -> list[dict]:
-    """Generate local SHAP feature attribution for a single patient profile."""
+def explain_single_patient(pipeline: Any, patient_df: pd.DataFrame, top_k: int = 6) -> list[dict]:
+    """Generate local SHAP feature attribution for a single patient profile.
+    
+    Uses SHAP LinearExplainer fitted against preprocessed training background data.
+    Maps transformed features accurately back to raw input values and formats
+    attributions using neutral, non-causal clinical language.
+    """
     prep = pipeline.named_steps["prep"]
-    clf = pipeline.named_steps["clf"]
+    x_prep = prep.transform(patient_df)
     feat_names = get_feature_names(prep)
 
-    x_prep = prep.transform(patient_df)
+    explainer = get_cached_explainer(pipeline)
+    shap_vals = explainer.shap_values(x_prep)
 
-    if hasattr(clf, "coef_"):
-        coefs = clf.coef_[0]
-        # Linear SHAP: contribution = (x - mean_x) * w
-        # For simplicity and exactness in linear models:
-        contributions = x_prep[0] * coefs
+    if isinstance(shap_vals, list):
+        contributions = shap_vals[1][0] if len(shap_vals) > 1 else shap_vals[0][0]
     else:
-        explainer = shap.TreeExplainer(clf)
-        contributions = explainer.shap_values(x_prep)[0]
+        contributions = shap_vals[0]
 
     items = []
+    first_row = patient_df.iloc[0]
+
     for name, contrib in zip(feat_names, contributions):
-        raw_val = patient_df.iloc[0].get(name, None)
+        meta = FEATURE_METADATA.get(name, {"label": name, "unit": "", "raw_key": name})
+        raw_key = meta["raw_key"]
+
+        raw_val = first_row.get(raw_key, None)
+        if raw_val is not None and hasattr(raw_val, "item"):
+            raw_val = raw_val.item()
+
+        contrib_float = float(contrib)
+        abs_contrib = abs(contrib_float)
+
+        if contrib_float > 0.001:
+            direction_desc = "increased the model output"
+            impact_badge = "increased"
+        elif contrib_float < -0.001:
+            direction_desc = "decreased the model output"
+            impact_badge = "decreased"
+        else:
+            direction_desc = "neutral influence on model output"
+            impact_badge = "neutral"
+
         items.append({
-            "feature": name,
+            "feature": raw_key,
+            "label": meta["label"],
             "raw_value": raw_val,
-            "shap_value": float(contrib),
-            "direction": "Pushed score higher (risk factor)" if contrib > 0 else "Pushed score lower (protective/normal)",
+            "unit": meta["unit"],
+            "shap_value": round(contrib_float, 4),
+            "abs_impact": round(abs_contrib, 4),
+            "direction": direction_desc,
+            "impact": impact_badge,
+            "statement": f"{meta['label']} ({raw_val} {meta['unit']}) {direction_desc}",
         })
 
-    items.sort(key=lambda x: abs(x["shap_value"]), reverse=True)
+    items.sort(key=lambda x: x["abs_impact"], reverse=True)
     return items[:top_k]
 
 

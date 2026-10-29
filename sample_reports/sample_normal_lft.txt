@@ -1,0 +1,32 @@
+================================================================================
+                    METROPOLITAN DIAGNOSTIC LABORATORIES
+                   Comprehensive Liver Function Test (LFT)
+================================================================================
+
+PATIENT DEMOGRAPHICS
+--------------------------------------------------------------------------------
+Patient Name   : Jane Doe                       Date of Collection : 28-Oct-2026
+Age / Gender   : 45 Y / Female                  Sample Type        : Serum
+Patient ID     : MDL-2026-89412                 Referring Physician: Dr. R. Sharma
+Referred By    : Wellness Clinic                Status             : Final Report
+
+--------------------------------------------------------------------------------
+TEST NAME                           RESULT      UNITS          REFERENCE RANGE
+--------------------------------------------------------------------------------
+Total Bilirubin                     0.9         mg/dL          0.2 - 1.2
+Direct Bilirubin (Conjugated)       0.2         mg/dL          0.0 - 0.3
+Alkaline Phosphatase (ALP)          98          U/L            44 - 147
+SGPT / Alanine Aminotransferase (ALT) 26        U/L            7 - 56
+SGOT / Aspartate Aminotransferase (AST) 28       U/L            10 - 40
+Total Protein                       7.2         g/dL           6.0 - 8.3
+Serum Albumin                       4.2         g/dL           3.5 - 5.0
+A/G Ratio (Albumin/Globulin)        1.4         ratio          1.1 - 2.5
+
+--------------------------------------------------------------------------------
+CLINICAL COMMENTS:
+Biochemical markers within normal physiological limits for adult female.
+Correlate clinically.
+
+================================================================================
+                           *** END OF REPORT ***
+================================================================================
